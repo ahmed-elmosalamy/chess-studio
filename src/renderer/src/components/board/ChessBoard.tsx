@@ -62,9 +62,11 @@ export default function ChessBoard({ game, pvArrows, placement }: { game: ChessG
     if (event.button !== 0) return
 
     if (event.altKey) {
-      game.addHighlight(square)
+      game.toggleHighlight(square)
       return
     }
+
+    game.clearAnnotations()
 
     if (placement) {
       placement.onPlace(square)
@@ -94,7 +96,12 @@ export default function ChessBoard({ game, pvArrows, placement }: { game: ChessG
   const onPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
     if (arrowPreview) {
       const target = squareAtClient(event.clientX, event.clientY)
-      if (target && target !== arrowPreview.from) game.addArrow({ ...arrowPreview, to: target })
+      if (!target) {
+        setArrowPreview(null)
+        return
+      }
+      if (target === arrowPreview.from) game.toggleHighlight(target)
+      else game.addArrow({ ...arrowPreview, to: target })
       setArrowPreview(null)
       return
     }

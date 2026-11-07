@@ -178,7 +178,10 @@ export default function useChessGame(soundEnabled: boolean) {
   }, [])
 
   const addArrow = useCallback((arrow: Arrow) => setArrows((previous) => [...previous, arrow]), [])
-  const addHighlight = useCallback((square: string) => setHighlighted((previous) => (previous.includes(square) ? previous : [...previous, square])), [])
+  const toggleHighlight = useCallback(
+    (square: string) => setHighlighted((previous) => (previous.includes(square) ? previous.filter((item) => item !== square) : [...previous, square])),
+    []
+  )
   const clearAnnotations = useCallback(() => {
     setArrows([])
     setHighlighted([])
@@ -313,7 +316,7 @@ export default function useChessGame(soundEnabled: boolean) {
     setComment,
     setNag,
     addArrow,
-    addHighlight,
+    toggleHighlight,
     clearAnnotations,
     setFlipped,
     loadDemo,
