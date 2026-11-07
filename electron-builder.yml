@@ -1,0 +1,27 @@
+appId: com.chessstudio.app
+productName: Chess Studio
+copyright: Copyright (c) 2026 Chess Studio contributors
+directories:
+  buildResources: build
+  output: dist
+files:
+  - out/**
+  - package.json
+  - "!node_modules/**"
+  - node_modules/chess.js/**
+extraFiles:
+  - from: LICENSE
+    to: LICENSE
+  - from: NOTICE.md
+    to: NOTICE.md
+asar: true
+win:
+  icon: build/icon.png
+  target:
+    - nsis
+    - portable
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
