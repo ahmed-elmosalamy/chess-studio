@@ -4,6 +4,7 @@ export const LibraryChannel = {
   Read: 'library:read',
   Remove: 'library:remove',
   Export: 'library:export',
+  ExportReport: 'library:export-report',
   ImportFiles: 'library:import-files',
   FetchOnline: 'library:fetch-online'
 } as const
@@ -17,13 +18,20 @@ export type LibraryEntry = {
   result: string
   plies: number
   savedAt: number
+  eco?: string
+  opening?: string
+  whiteElo?: number
+  blackElo?: number
+  timeControl?: string
 }
 
 export type SkippedGame = { index: number; reason: string }
 
-export type ImportOutcome = { saved: LibraryEntry[]; skipped: SkippedGame[] }
+export type SaveResult = { entry: LibraryEntry; duplicate: boolean }
 
-export type ImportedFile = { name: string; saved: number; skipped: SkippedGame[] }
+export type ImportOutcome = { saved: LibraryEntry[]; skipped: SkippedGame[]; duplicates: LibraryEntry[] }
+
+export type ImportedFile = { name: string; saved: number; duplicates: number; skipped: SkippedGame[] }
 
 export type LibraryImportReport = { cancelled: boolean; files: ImportedFile[] }
 

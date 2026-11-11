@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Chess } from 'chess.js'
 import { addChild, patchNode, pruneFrom, siblingDirection, lastDescendant, type MoveInput, type Tree } from '../chess/tree.ts'
 import { demoGame, START_FEN, treeFromPgn, tryMove, type GameDoc } from '../chess/game.ts'
+import { loadSession, saveSession } from '../chess/session.ts'
 import { playSound } from '../audio/sounds.ts'
 
 export type ArrowColor = 'green' | 'red' | 'blue' | 'orange'
@@ -15,7 +16,7 @@ function emptyDoc(): GameDoc {
 }
 
 export default function useChessGame(soundEnabled: boolean) {
-  const [doc, setDoc] = useState<GameDoc>(emptyDoc)
+  const [doc, setDoc] = useState<GameDoc>(() => loadSession(localStorage) ?? emptyDoc())
   const [selected, setSelected] = useState<string | null>(null)
   const [arrows, setArrows] = useState<Arrow[]>([])
   const [highlighted, setHighlighted] = useState<string[]>([])
@@ -25,6 +26,11 @@ export default function useChessGame(soundEnabled: boolean) {
   const { tree, currentId } = doc
   const currentNode = tree[currentId]
   const fen = currentNode.fen
+
+  useEffect(() => {
+    const timer = setTimeout(() => saveSession(doc, localStorage), 400)
+    return () => clearTimeout(timer)
+  }, [doc])
 
   const chess = useMemo(() => new Chess(fen), [fen])
   const turn = chess.turn()
@@ -177,6 +183,10 @@ export default function useChessGame(soundEnabled: boolean) {
     setDoc((previous) => ({ ...previous, tree: patchNode(previous.tree, previous.currentId, { nag }) }))
   }, [])
 
+  const setHeaders = useCallback((patch: Record<string, string>) => {
+    setDoc((previous) => ({ ...previous, headers: { ...previous.headers, ...patch } }))
+  }, [])
+
   const addArrow = useCallback((arrow: Arrow) => setArrows((previous) => [...previous, arrow]), [])
   const toggleHighlight = useCallback(
     (square: string) => setHighlighted((previous) => (previous.includes(square) ? previous.filter((item) => item !== square) : [...previous, square])),
@@ -219,9 +229,9 @@ export default function useChessGame(soundEnabled: boolean) {
   )
 
   useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return
+    const onKeyDown = (event: KeyboardEvent): void => {
+      const target = event.target
+      if (target instanceof HTMLElement && (target.isContentEditable || target.closest('input, textarea, select, button, a'))) return
 
       switch (event.key) {
         case 'ArrowLeft':
@@ -315,6 +325,7 @@ export default function useChessGame(soundEnabled: boolean) {
     deleteCurrent,
     setComment,
     setNag,
+    setHeaders,
     addArrow,
     toggleHighlight,
     clearAnnotations,

@@ -30,6 +30,19 @@ licensed under the GNU General Public License, version 2 or later. See the
 
 ---
 
+## chess-openings (lichess-org) — CC0-1.0
+
+Opening move sequences bundled as the "Book" move classifier, generated into
+`src/renderer/src/chess/bookLines.ts` by `scripts/build-book-lines.mjs`.
+Source: https://github.com/lichess-org/chess-openings
+
+To the extent possible under law, the authors have waived all copyright and
+related or neighboring rights to this data. It is distributed under the
+Creative Commons CC0 1.0 Universal dedication:
+https://creativecommons.org/publicdomain/zero/1.0/
+
+---
+
 ## chess.js 1.4.0 — BSD-2-Clause
 
 Copyright (c) 2025, Jeff Hlywa (jhlywa@gmail.com)
@@ -144,3 +157,53 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
 LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+---
+
+## pdfjs-dist 5.7.284 — Apache-2.0
+
+PDF reading and page rasterisation. Copyright the Mozilla Foundation.
+Source: https://github.com/mozilla/pdf.js
+
+The complete Apache-2.0 text is in `licenses/pdfjs-dist-APACHE-2.0.txt` and
+ships with the application. Scanned pages use the JBIG2 and OpenJPEG decoders
+from that package; their upstream notices are in
+`licenses/jbig2-BSD-3-Clause.txt`, `licenses/pdfjs-jbig2-APACHE-2.0.txt`,
+`licenses/openjpeg-BSD-2-Clause.txt` and `licenses/pdfjs-openjpeg-APACHE-2.0.txt`.
+
+---
+
+## tesseract.js 7.0.0 and tesseract.js-core 6.1.2 — Apache-2.0
+
+Offline optical character recognition for scanned books. Copyright the
+tesseract.js authors. Source: https://github.com/naptha/tesseract.js
+
+Both are Apache-2.0; the complete text is in
+`licenses/tesseract.js-core-APACHE-2.0.txt` and ships with the application.
+The WebAssembly core and the bundled English `traineddata` are loaded from
+this application, never from a network service.
+
+---
+
+## @tesseract.js-data/eng 1.0.0 — MIT
+
+English language data (`eng.traineddata.gz`) used by tesseract.js.
+Copyright (c) the tesseract.js authors; the underlying tessdata is Apache-2.0
+from https://github.com/tesseract-ocr/tessdata.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

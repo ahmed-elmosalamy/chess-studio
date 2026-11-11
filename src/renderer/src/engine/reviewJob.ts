@@ -1,4 +1,5 @@
 import { evaluateMove, positionsToSearch, reviewTargets, type EvaluationParts, type LinesByFen, type ReviewScope } from '../chess/review.ts'
+import { bookEvaluation, bookMoves } from '../chess/book.ts'
 import type { EngineSettings, EvalLine } from '@shared/engine'
 import type { Tree } from '../chess/tree.ts'
 import type SearchQueue from './searchQueue.ts'
@@ -16,9 +17,16 @@ export default async function runReview(
   shouldStop: () => boolean
 ): Promise<ReviewOutcome> {
   const nodes = reviewTargets(tree, rootId, scope)
-  const fens = positionsToSearch(tree, nodes)
+  const book = bookMoves(tree, rootId)
   const lines: LinesByFen = new Map()
   const results: Record<string, EvaluationParts> = {}
+
+  for (const node of nodes) {
+    if (book.has(node.id)) results[node.id] = bookEvaluation()
+  }
+
+  // Every position is searched, book moves included, so the board can show a best-move arrow on every ply.
+  const fens = positionsToSearch(tree, nodes)
 
   const harvest = (): void => {
     for (const node of nodes) {
@@ -47,8 +55,9 @@ export default async function runReview(
 }
 
 export function reviewWorkload(tree: Tree, rootId: string, scope: ReviewScope): { moves: number; positions: number } {
+  const book = bookMoves(tree, rootId)
   const nodes = reviewTargets(tree, rootId, scope)
-  return { moves: nodes.length, positions: positionsToSearch(tree, nodes).length }
+  return { moves: nodes.filter((node) => !book.has(node.id)).length, positions: positionsToSearch(tree, nodes).length }
 }
 
 /** Classifying a move against its alternative needs at least two lines from every position. */

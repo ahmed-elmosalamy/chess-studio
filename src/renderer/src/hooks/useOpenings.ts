@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ExplorerResult } from '@shared/openings'
 import type { Tree, TreeNode } from '../chess/tree.ts'
 import type { ChessGame } from './useChessGame.ts'
@@ -25,6 +25,7 @@ export default function useOpenings(game: ChessGame, enabled: boolean) {
   const [result, setResult] = useState<ExplorerResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const requestRef = useRef(0)
 
   const refreshToken = useCallback(async () => {
     try {
@@ -42,6 +43,7 @@ export default function useOpenings(game: ChessGame, enabled: boolean) {
   const play = useMemo(() => lineUcis(game.tree, game.rootId, game.currentId), [game.tree, game.rootId, game.currentId])
 
   const refresh = useCallback(async () => {
+    const request = ++requestRef.current
     if (!hasToken) {
       setResult(null)
       setError(null)
@@ -50,12 +52,15 @@ export default function useOpenings(game: ChessGame, enabled: boolean) {
     setLoading(true)
     setError(null)
     try {
-      setResult(await window.studio.openings.query({ fen: rootFen, play }))
+      const next = await window.studio.openings.query({ fen: rootFen, play })
+      if (request !== requestRef.current) return
+      setResult(next)
     } catch (caught) {
+      if (request !== requestRef.current) return
       setError(cleanError(caught))
       setResult(null)
     } finally {
-      setLoading(false)
+      if (request === requestRef.current) setLoading(false)
     }
   }, [hasToken, rootFen, play])
 

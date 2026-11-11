@@ -27,20 +27,24 @@ async function request(fetchImpl: typeof fetch, url: string, accept: string): Pr
   return response
 }
 
+function toGame(pgn: string): FetchedGame {
+  const { headers, plies } = pgnSummary(pgn)
+  return {
+    pgn,
+    white: headers['White'] ?? '?',
+    black: headers['Black'] ?? '?',
+    event: headers['Event'] ?? '?',
+    date: headers['Date'] ?? '????.??.??',
+    result: headers['Result'] ?? '*',
+    plies
+  }
+}
+
 function summarize(pgns: string[], skipped: SkippedGame[]): FetchedGame[] {
   const games: FetchedGame[] = []
   pgns.forEach((pgn, index) => {
     try {
-      const { headers, plies } = pgnSummary(pgn)
-      games.push({
-        pgn,
-        white: headers['White'] ?? '?',
-        black: headers['Black'] ?? '?',
-        event: headers['Event'] ?? '?',
-        date: headers['Date'] ?? '????.??.??',
-        result: headers['Result'] ?? '*',
-        plies
-      })
+      games.push(toGame(pgn))
     } catch (error) {
       skipped.push({ index, reason: messageOf(error) })
     }
@@ -60,9 +64,17 @@ async function chessCom(username: string, max: number, fetchImpl: typeof fetch):
     if (games.length >= max) break
     const month = (await (await request(fetchImpl, url, 'application/json')).json()) as { games?: { pgn?: string }[] }
     used.push(url.slice(-7))
-    games.push(...summarize((month.games ?? []).map((game) => game.pgn ?? ''), skipped))
+    const pgns = (month.games ?? []).map((game) => game.pgn ?? '')
+    /* Archives are oldest-first inside each month; walk backwards so "last games" means most recent. */
+    for (let index = pgns.length - 1; index >= 0 && games.length < max; index -= 1) {
+      try {
+        games.push(toGame(pgns[index]))
+      } catch (error) {
+        skipped.push({ index, reason: messageOf(error) })
+      }
+    }
   }
-  return { source: `chess.com/${username} (${used.join(', ') || 'no games'})`, games: games.slice(0, max), skipped }
+  return { source: `chess.com/${username} (${used.join(', ') || 'no games'})`, games, skipped }
 }
 
 async function lichessUser(username: string, max: number, fetchImpl: typeof fetch): Promise<FetchReport> {

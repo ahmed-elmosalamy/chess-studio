@@ -8,8 +8,9 @@
   "license": "GPL-3.0-or-later",
   "private": true,
   "scripts": {
-    "dev": "electron-vite dev",
-    "build": "electron-vite build",
+    "dev": "npm run ocr:assets && electron-vite dev",
+    "build": "npm run ocr:assets && electron-vite build",
+    "ocr:assets": "node scripts/copy-ocr-assets.mjs",
     "start": "electron-vite preview",
     "dist": "npm run build && electron-builder --win",
     "dist:dir": "npm run build && electron-builder --win --dir",
@@ -18,11 +19,15 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web"
   },
   "dependencies": {
+    "@tesseract.js-data/eng": "^1.0.0",
     "chess.js": "^1.4.0",
     "lucide-react": "^1.70.0",
+    "pdfjs-dist": "^5.7.284",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "stockfish": "^19.0.1"
+    "stockfish": "^19.0.1",
+    "tesseract.js": "^7.0.0",
+    "tesseract.js-core": "^6.1.2"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.4",

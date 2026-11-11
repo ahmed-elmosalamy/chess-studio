@@ -1,47 +1,39 @@
-import { dialog, ipcMain, type WebContents } from 'electron'
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { app, dialog, ipcMain, type WebContents } from 'electron'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { EngineChannel, defaultEngineSettings, type AnalyzeRequest, type EngineSettings, type EngineSource, type EngineStatus, type NativeEngineInfo } from '@shared/engine'
+import { EngineChannel, type AnalyzeRequest, type EngineSettings, type EngineSource, type EngineStatus, type NativeEngineInfo } from '@shared/engine'
 import UciProcess from './uciProcess'
-
-type Config = { source: EngineSource; path: string | null; settings: EngineSettings }
+import { sendTo } from '../safeSend'
+import { defaultEngineConfig, migrateEngineConfig, readEngineConfig, writeEngineConfig, type EngineConfig } from './engineConfig'
 
 export default class EngineManager {
-  private config: Config = { source: 'wasm', path: null, settings: defaultEngineSettings }
+  private config: EngineConfig = defaultEngineConfig
   private engine: UciProcess | null = null
   private status: EngineStatus = { state: 'idle', source: 'wasm', name: '', error: null }
-  private epoch = 0
 
   constructor(private readonly target: () => WebContents | null) {}
 
   private get configFile(): string {
+    return join(app.getPath('userData'), 'engine.json')
+  }
+
+  private get legacyConfigFile(): string {
     return join(process.env['APPDATA'] ?? '.', 'chess-studio', 'engine.json')
   }
 
   load(): void {
-    try {
-      const raw = JSON.parse(readFileSync(this.configFile, 'utf-8')) as Partial<Config>
-      this.config = {
-        source: raw.source === 'native' ? 'native' : 'wasm',
-        path: typeof raw.path === 'string' && raw.path ? raw.path : null,
-        settings: { ...defaultEngineSettings, ...raw.settings }
-      }
-    } catch {
-      /* first run has no config file yet */
-    }
+    migrateEngineConfig(this.legacyConfigFile, this.configFile)
+    this.config = readEngineConfig(this.configFile)
   }
 
   private save(): void {
-    try {
-      writeFileSync(this.configFile, JSON.stringify(this.config, null, 2), 'utf-8')
-    } catch {
-      /* settings still apply for this session if the write fails */
-    }
+    const error = writeEngineConfig(this.configFile, this.config)
+    if (error) console.error('[engine] could not save config:', error)
   }
 
   private publish(status: EngineStatus): void {
     this.status = status
-    this.target()?.send(EngineChannel.Status, { kind: 'status', status })
+    sendTo(this.target(), EngineChannel.Status, { kind: 'status', status })
   }
 
   private nativeInfo(): NativeEngineInfo {
@@ -101,8 +93,6 @@ export default class EngineManager {
   private async handleAnalyze(request: AnalyzeRequest): Promise<void> {
     if (request.source === 'wasm') return
 
-    this.epoch = request.epoch
-
     if (!this.config.path) {
       this.publish({ state: 'error', source: 'native', name: '', error: 'No engine executable selected.' })
       return
@@ -111,11 +101,11 @@ export default class EngineManager {
     try {
       if (!this.engine) {
         this.engine = new UciProcess(this.config.path, {
-          onLine: (line) => {
-            this.target()?.send(EngineChannel.Status, { kind: 'line', epoch: this.epoch, line })
+          onLine: (line, epoch) => {
+            sendTo(this.target(), EngineChannel.Status, { kind: 'line', epoch, line })
           },
-          onBestmove: (move) => {
-            this.target()?.send(EngineChannel.Status, { kind: 'best', epoch: this.epoch, move })
+          onBestmove: (move, epoch) => {
+            sendTo(this.target(), EngineChannel.Status, { kind: 'best', epoch, move })
             this.publish({ state: 'ready', source: 'native', name: this.engine?.engineName ?? '', error: null })
           },
           onName: (name) => this.publish({ state: 'ready', source: 'native', name, error: null }),

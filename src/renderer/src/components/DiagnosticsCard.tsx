@@ -52,7 +52,7 @@ export default function DiagnosticsCard({ soundEnabled, engineName, engineState 
       </div>
 
       <div className="mt-3">
-        <div className="mb-1.5 flex items-center gap-2 text-[10px] uppercase tracking-wide text-muted">
+        <div className="mb-1.5 flex items-center gap-2 text-2xs uppercase tracking-wide text-muted">
           <Volume2 size={12} /> Sound check
         </div>
         <div className="flex flex-wrap gap-1.5">

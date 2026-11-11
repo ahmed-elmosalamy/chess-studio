@@ -1,5 +1,5 @@
 import { app, dialog, ipcMain } from 'electron'
-import { readFile, writeFile } from 'node:fs/promises'
+import { readFile, rename, writeFile } from 'node:fs/promises'
 import { basename, join } from 'node:path'
 import { LibraryChannel, libraryFileName, type FetchRequest, type ImportedFile, type LibraryImportReport } from '@shared/library'
 import { createLibraryStore, importPgnText } from './libraryStore'
@@ -29,6 +29,19 @@ export default class LibraryManager {
       return result.filePath
     })
 
+    ipcMain.handle(LibraryChannel.ExportReport, async (_event, data: Uint8Array, name: string) => {
+      const result = await dialog.showSaveDialog({
+        title: 'Save game report',
+        defaultPath: join(app.getPath('documents'), name),
+        filters: [{ name: 'PNG image', extensions: ['png'] }]
+      })
+      if (result.canceled || !result.filePath) return null
+      const tempPath = `${result.filePath}.tmp`
+      await writeFile(tempPath, Buffer.from(data))
+      await rename(tempPath, result.filePath)
+      return result.filePath
+    })
+
     ipcMain.handle(LibraryChannel.FetchOnline, (_event, request: FetchRequest) => fetchGames(request))
 
     ipcMain.handle(LibraryChannel.ImportFiles, async (): Promise<LibraryImportReport> => {
@@ -44,9 +57,9 @@ export default class LibraryManager {
         const name = basename(path)
         try {
           const outcome = await importPgnText(this.store, await readFile(path, 'utf8'))
-          files.push({ name, saved: outcome.saved.length, skipped: outcome.skipped })
+          files.push({ name, saved: outcome.saved.length, duplicates: outcome.duplicates.length, skipped: outcome.skipped })
         } catch (error) {
-          files.push({ name, saved: 0, skipped: [{ index: 0, reason: error instanceof Error ? error.message : String(error) }] })
+          files.push({ name, saved: 0, duplicates: 0, skipped: [{ index: 0, reason: error instanceof Error ? error.message : String(error) }] })
         }
       }
       return { cancelled: false, files }

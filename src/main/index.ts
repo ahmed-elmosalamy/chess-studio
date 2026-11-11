@@ -4,8 +4,23 @@ import { extname, join, normalize, sep } from 'node:path'
 import { AppChannel, WindowChannel, type WindowState } from '@shared/ipc'
 import EngineManager from './engine/engineManager'
 import LibraryManager from './library/libraryManager'
+import BookManager from './book/bookManager'
 import OpeningsManager from './openings/openingsManager'
 import TablebaseManager from './tablebase/tablebaseManager'
+import AiManager from './ai/aiManager'
+import TrainerManager from './trainer/trainerManager'
+import { tuneNetwork } from './network'
+import { sendTo } from './safeSend'
+
+tuneNetwork()
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[main] unhandled rejection', reason)
+})
+
+process.on('uncaughtException', (error) => {
+  console.error('[main] uncaught exception', error)
+})
 
 if (!app.isPackaged && process.env['STUDIO_DEBUG_PORT']) {
   app.commandLine.appendSwitch('remote-debugging-port', process.env['STUDIO_DEBUG_PORT'])
@@ -31,6 +46,7 @@ const MIME: Record<string, string> = {
   '.jpg': 'image/jpeg',
   '.ico': 'image/x-icon',
   '.woff2': 'font/woff2',
+  '.gz': 'application/gzip',
   '.map': 'application/json',
   '.txt': 'text/plain; charset=utf-8'
 }
@@ -70,20 +86,27 @@ function createWindow(): void {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      spellcheck: false
+      spellcheck: false,
+      // pdf.js draws display-intent pages via requestAnimationFrame, which Chromium pauses in a
+      // hidden window; background AI/OCR book runs must keep rasterising when the app is minimised.
+      backgroundThrottling: false
     }
   })
 
   mainWindow.once('ready-to-show', () => mainWindow?.show())
 
   const sendState = (): void => {
-    if (!mainWindow) return
+    if (!mainWindow || mainWindow.isDestroyed()) return
     const state: WindowState = {
       maximized: mainWindow.isMaximized(),
       fullscreen: mainWindow.isFullScreen()
     }
-    mainWindow.webContents.send(WindowChannel.State, state)
+    sendTo(mainWindow.webContents, WindowChannel.State, state)
   }
+
+  mainWindow.on('closed', () => {
+    mainWindow = null
+  })
 
   mainWindow.on('maximize', sendState)
   mainWindow.on('unmaximize', sendState)
@@ -142,8 +165,11 @@ if (!app.requestSingleInstanceLock()) {
     buildMenu()
     engines.register()
     new LibraryManager().register()
+    new BookManager().register()
     new OpeningsManager().register()
     new TablebaseManager().register()
+    new AiManager().register()
+    new TrainerManager().register()
     registerAppProtocol()
     createWindow()
 

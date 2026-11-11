@@ -1,6 +1,7 @@
 import type { EngineScore } from './engine'
 
 export type ReviewGrade =
+  | 'book'
   | 'brilliant'
   | 'great'
   | 'best'
@@ -14,9 +15,10 @@ export type ReviewGrade =
 export type GradeMeta = { label: string; glyph: string; nag: string | null; color: string; notable: boolean }
 
 export const gradeMeta: Record<ReviewGrade, GradeMeta> = {
+  book: { label: 'Book', glyph: '▤', nag: null, color: 'var(--grade-book)', notable: false },
   brilliant: { label: 'Brilliant', glyph: '!!', nag: '$2', color: 'var(--grade-brilliant)', notable: true },
   great: { label: 'Great', glyph: '!', nag: '$1', color: 'var(--grade-great)', notable: true },
-  best: { label: 'Best', glyph: '□', nag: '$7', color: 'var(--grade-best)', notable: false },
+  best: { label: 'Best', glyph: '★', nag: '$7', color: 'var(--grade-best)', notable: false },
   excellent: { label: 'Excellent', glyph: '✓', nag: null, color: 'var(--grade-excellent)', notable: false },
   good: { label: 'Good', glyph: '·', nag: null, color: 'var(--grade-good)', notable: false },
   inaccuracy: { label: 'Inaccuracy', glyph: '?!', nag: '$3', color: 'var(--grade-inaccuracy)', notable: true },
@@ -26,6 +28,7 @@ export const gradeMeta: Record<ReviewGrade, GradeMeta> = {
 }
 
 export const reviewOrder: ReviewGrade[] = [
+  'book',
   'brilliant',
   'great',
   'best',
@@ -45,7 +48,8 @@ export const ReviewThresholds = {
   greatGap: 120,
   winning: 200,
   missLoss: 60,
-  brilliantLead: 100,
+  brilliantFloor: -50,
+  brilliantCeiling: 500,
   minStake: 25
 } as const
 
@@ -89,9 +93,12 @@ export function gradeMove(facts: MoveFacts): MoveEvaluation {
   const failedToPunish = facts.opponentBlundered && facts.afterCp >= 0 && loss >= t.inaccuracy
   const missedForcedMate = facts.mateAvailable && facts.afterCp >= t.missLoss
 
+  // chess.com: a sound sacrifice that is not just converting a position that was already winning
+  // without it, so the ceiling reads the best line that avoids the played move.
+  const withoutMove = facts.isBest ? (facts.secondCp ?? facts.topCp) : facts.topCp
   let grade: ReviewGrade
   if (facts.matedAfter) grade = 'blunder'
-  else if (facts.isSacrifice && loss <= t.excellent && facts.afterCp >= t.brilliantLead) grade = 'brilliant'
+  else if (facts.isSacrifice && loss <= t.excellent && facts.afterCp >= t.brilliantFloor && withoutMove < t.brilliantCeiling) grade = 'brilliant'
   else if (facts.isBest) grade = facts.onlyMove || (gap !== null && gap >= t.greatGap) ? 'great' : 'best'
   else if (missedForcedMate || ((threwAwayWin || failedToPunish) && loss <= t.mistake)) grade = 'missedWin'
   else if (loss <= t.excellent) grade = 'excellent'
@@ -115,6 +122,29 @@ export function capsAccuracy(wcBefore: number, wcAfter: number): number {
   return Math.min(100, Math.max(0, Math.round(100 * (1 - drop / stake))))
 }
 
+export type BlunderFacts = {
+  playedSan: string
+  bestSan: string | null
+  loss: number
+  beforeLabel: string
+  afterLabel: string
+}
+
+/** One local sentence for a bad move, built only from engine facts so it never contradicts the review. */
+export function explainBlunder(facts: BlunderFacts): string {
+  const opener = facts.loss >= MATE_CP ? `${facts.playedSan} loses the game` : `${facts.playedSan} drops ${(facts.loss / 100).toFixed(1)} pawns`
+  if (!facts.bestSan) return `${opener}; the engine held ${facts.beforeLabel}.`
+  return `${opener}: best was ${facts.bestSan} (${facts.beforeLabel}) instead of ${facts.afterLabel}.`
+}
+
+export type ExplanationKind = 'blunder' | 'brilliant'
+
+/** Only brilliant and blunder moves get a local sentence; both read from the same engine facts. */
+export function explainMove(facts: BlunderFacts & { kind: ExplanationKind }): string {
+  if (facts.kind === 'brilliant') return `${facts.playedSan} is a sound sacrifice: it keeps ${facts.afterLabel}.`
+  return explainBlunder(facts)
+}
+
 export type GradeCounts = Record<ReviewGrade, number>
 
 export type SideSummary = { moves: number; accuracy: number; acpl: number | null; counts: GradeCounts }
@@ -127,15 +157,18 @@ export function summarizeMoves(evaluations: MoveEvaluation[]): SideSummary {
   const counts = emptyCounts()
   const losses: number[] = []
   let total = 0
+  let rated = 0
 
   for (const entry of evaluations) {
     counts[entry.grade] += 1
+    if (entry.grade === 'book') continue
+    rated += 1
     total += entry.accuracy
     if (entry.cpLoss !== null) losses.push(entry.cpLoss)
   }
 
-  const accuracy = evaluations.length === 0 ? 0 : Math.round(total / evaluations.length)
+  const accuracy = rated === 0 ? 0 : Math.round(total / rated)
   const acpl = losses.length === 0 ? null : Math.round((losses.reduce((sum, value) => sum + value, 0) / losses.length) * 10) / 10
 
-  return { moves: evaluations.length, accuracy, acpl, counts }
+  return { moves: rated, accuracy, acpl, counts }
 }

@@ -3,6 +3,7 @@ import { ClipboardCopy, Eraser, FlipHorizontal2, RotateCcw, Sparkles } from 'luc
 import { variationRows } from '../chess/tree.ts'
 import { glyphOf, nagTable, pgnFromTree } from '../chess/game.ts'
 import { gradeMeta } from '@shared/review'
+import GradeBadge from './GradeBadge.tsx'
 import type { EvaluationParts } from '../chess/review.ts'
 import type { ChessGame } from '../hooks/useChessGame.ts'
 
@@ -56,7 +57,11 @@ export default function MoveList({ game, grades }: { game: ChessGame; grades?: R
               const glyph = glyphOf(cell.nag)
               const review = grades?.[cell.nodeId]
               const grade = review ? gradeMeta[review.grade] : null
-              const title = review ? `${gradeMeta[review.grade].label} · accuracy ${review.accuracy} · ${review.beforeLabel} → ${review.afterLabel}` : undefined
+              const title = review
+                ? review.grade === 'book'
+                  ? 'Book · theory move'
+                  : `${gradeMeta[review.grade].label} · accuracy ${review.accuracy} · ${review.beforeLabel} → ${review.afterLabel}`
+                : undefined
 
               return (
                 <span key={cell.nodeId} className="flex items-baseline">
@@ -66,13 +71,16 @@ export default function MoveList({ game, grades }: { game: ChessGame; grades?: R
                     data-testid={grade ? `grade-${cell.ply}` : undefined}
                     title={title}
                     onClick={() => game.navigate(cell.nodeId)}
-                    style={grade && !isCurrent ? { color: grade.color } : undefined}
                     className={`rounded px-1 font-mono transition-colors ${
                       isCurrent ? 'bg-accent text-bg font-semibold' : 'hover:bg-surface-3'
                     }`}
                   >
                     {cell.san}
-                    {grade && <span className={`ml-0.5 text-[10px] font-semibold ${isCurrent ? 'text-bg' : ''}`}>{grade.glyph}</span>}
+                    {review && (
+                      <span className="ml-1 inline-block align-middle">
+                        <GradeBadge grade={review.grade} />
+                      </span>
+                    )}
                     {glyph && <span className={`ml-0.5 ${isCurrent ? 'text-bg' : 'text-accent-soft'}`}>{glyph}</span>}
                     {cell.comment && <span className="ml-0.5 text-[9px] text-muted">{'●'}</span>}
                   </button>
@@ -84,12 +92,12 @@ export default function MoveList({ game, grades }: { game: ChessGame; grades?: R
       </div>
 
       <div className="shrink-0 rounded-md border border-line bg-surface p-2">
-        <div className="mb-1 flex items-center justify-between text-[10px] uppercase tracking-wide text-muted">
+        <div className="mb-1 flex items-center justify-between text-2xs uppercase tracking-wide text-muted">
           <span>Annotation · ply {currentNode.ply}</span>
           <select
             value={currentNode.nag ?? ''}
             onChange={(event) => game.setNag(event.target.value || null)}
-            className="rounded border border-line bg-surface-2 px-1 py-0.5 text-[10px] normal-case text-text"
+            className="rounded border border-line bg-surface-2 px-1 py-0.5 text-2xs normal-case text-text"
           >
             <option value="">no glyph</option>
             {nagTable.map((entry) => (

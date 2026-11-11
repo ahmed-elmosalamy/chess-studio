@@ -127,6 +127,10 @@ export default function StudyPanel({ game, armed, onArm, tablebase, onPlayMove }
         <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">Study tools</span>
       </div>
 
+      <div data-testid="study-hint" className="shrink-0 text-2xs leading-snug text-muted">
+        Pick a line in Books or Openings to load it here, or edit the position below.
+      </div>
+
       {hasMoves && (
         <div data-testid="study-edit-banner" className="flex shrink-0 flex-col gap-1.5 rounded-md border border-line bg-surface-2 p-2">
           <div className="flex items-center gap-1.5 text-[11px] text-muted">
@@ -135,7 +139,7 @@ export default function StudyPanel({ game, armed, onArm, tablebase, onPlayMove }
           </div>
           {editConfirm ? (
             <div className="flex items-center gap-1.5">
-              <span className="flex-1 text-[10px] leading-snug text-muted">Discard {plies} plies and edit the starting position?</span>
+              <span className="flex-1 text-2xs leading-snug text-muted">Discard {plies} plies and edit the starting position?</span>
               <button type="button" data-testid="study-edit-confirm" onClick={startEditing} className={`${actionButton} border-accent text-text`}>
                 Discard &amp; edit
               </button>
@@ -162,16 +166,16 @@ export default function StudyPanel({ game, armed, onArm, tablebase, onPlayMove }
           spellCheck={false}
           value={fenText}
           onChange={(event) => setFenText(event.target.value)}
-          className="no-drag resize-none rounded-md border border-line bg-surface px-2 py-1 font-mono text-[10px] leading-relaxed text-text outline-none focus:border-accent"
+          className="no-drag resize-none rounded-md border border-line bg-surface px-2 py-1 font-mono text-2xs leading-relaxed text-text outline-none focus:border-accent"
         />
         {loadError && (
-          <div data-testid="study-fen-error" className="rounded-md border border-danger bg-surface px-2 py-1 text-[10px] leading-snug text-danger">
+          <div data-testid="study-fen-error" className="rounded-md border border-danger bg-surface px-2 py-1 text-2xs leading-snug text-danger">
             {loadError}
           </div>
         )}
         {loadConfirm ? (
           <div className="flex items-center gap-1.5">
-            <span className="flex-1 text-[10px] leading-snug text-muted">Loading discards {plies} plies. Continue?</span>
+            <span className="flex-1 text-2xs leading-snug text-muted">Loading discards {plies} plies. Continue?</span>
             <button type="button" data-testid="study-load-confirm" onClick={loadPosition} className={`${actionButton} border-accent text-text`}>
               Load &amp; discard
             </button>
@@ -225,7 +229,7 @@ export default function StudyPanel({ game, armed, onArm, tablebase, onPlayMove }
           <span className="w-[70px] shrink-0 pt-1 text-[11px] text-muted">Castling</span>
           <div className="grid flex-1 grid-cols-2 gap-1">
             {castlingRights.map(({ right, label }) => (
-              <label key={right} className={`flex items-center gap-1.5 text-[10px] ${hasMoves || !possibleRights.includes(right) ? 'text-muted opacity-60' : 'text-text'}`}>
+              <label key={right} className={`flex items-center gap-1.5 text-2xs ${hasMoves || !possibleRights.includes(right) ? 'text-muted opacity-60' : 'text-text'}`}>
                 <input
                   type="checkbox"
                   data-testid={`study-castling-${right}`}
@@ -349,7 +353,7 @@ export default function StudyPanel({ game, armed, onArm, tablebase, onPlayMove }
         >
           <Eraser size={11} /> Eraser
         </button>
-        <div data-testid="study-armed-hint" className="text-[10px] leading-snug text-muted">
+        <div data-testid="study-armed-hint" className="text-2xs leading-snug text-muted">
           {armed === 'eraser'
             ? 'Click a piece on the board to remove it. Kings cannot be removed. Press Esc to stop.'
             : armedPiece
@@ -362,7 +366,7 @@ export default function StudyPanel({ game, armed, onArm, tablebase, onPlayMove }
         <div className="flex items-center gap-1.5">
           <Database size={11} className="text-muted" />
           <span className="text-[11px] font-semibold text-muted">Tablebase</span>
-          <span className="rounded-full border border-line bg-surface px-2 py-0.5 text-[10px] text-muted">{TABLEBASE_MAX_PIECES}-piece</span>
+          <span className="rounded-full border border-line bg-surface px-2 py-0.5 text-2xs text-muted">{TABLEBASE_MAX_PIECES}-piece</span>
           <div className="flex-1" />
           <button
             type="button"
@@ -377,19 +381,19 @@ export default function StudyPanel({ game, armed, onArm, tablebase, onPlayMove }
         </div>
 
         {!tablebase.eligible && (
-          <div data-testid="study-tablebase-too-many" className="text-[10px] leading-snug text-muted">
+          <div data-testid="study-tablebase-too-many" className="text-2xs leading-snug text-muted">
             Tablebases cover up to {TABLEBASE_MAX_PIECES} pieces. This position has {tablebase.count}.
           </div>
         )}
 
         {tablebase.eligible && tablebase.error && (
-          <div data-testid="study-tablebase-error" className="rounded-md border border-danger bg-surface px-2 py-1 text-[10px] leading-snug text-danger">
+          <div data-testid="study-tablebase-error" className="rounded-md border border-danger bg-surface px-2 py-1 text-2xs leading-snug text-danger">
             {tablebase.error}
           </div>
         )}
 
         {tablebase.eligible && tablebase.loading && !tablebase.result && (
-          <div data-testid="study-tablebase-loading" className="text-[10px] text-muted">
+          <div data-testid="study-tablebase-loading" className="text-2xs text-muted">
             Probing tablebase…
           </div>
         )}
@@ -397,21 +401,21 @@ export default function StudyPanel({ game, armed, onArm, tablebase, onPlayMove }
         {tablebase.eligible && tablebase.result && (
           <>
             <div className="flex items-center gap-2 rounded-md border border-line bg-surface px-2 py-1.5">
-              <span data-testid="study-tablebase-category" className={`rounded border px-1.5 py-0.5 text-[10px] font-semibold ${tbTone}`}>
+              <span data-testid="study-tablebase-category" className={`rounded border px-1.5 py-0.5 text-2xs font-semibold ${tbTone}`}>
                 {categoryLabel(tablebase.result.category)}
               </span>
-              <span className="text-[10px] text-muted">for {parts.turn === 'w' ? 'White' : 'Black'}</span>
+              <span className="text-2xs text-muted">for {parts.turn === 'w' ? 'White' : 'Black'}</span>
               <div className="flex-1" />
-              <span data-testid="study-tablebase-dtz" className="font-mono text-[10px] text-muted">
+              <span data-testid="study-tablebase-dtz" className="font-mono text-2xs text-muted">
                 DTZ {tablebase.result.dtz ?? '—'}
               </span>
-              <span data-testid="study-tablebase-dtm" className="font-mono text-[10px] text-muted">
+              <span data-testid="study-tablebase-dtm" className="font-mono text-2xs text-muted">
                 DTM {tablebase.result.dtm ?? '—'}
               </span>
             </div>
             <div data-testid="study-tablebase-moves" className="flex flex-col gap-1">
               {tablebase.result.moves.length === 0 && (
-                <div data-testid="study-tablebase-empty" className="px-1 py-1 text-[10px] text-muted">
+                <div data-testid="study-tablebase-empty" className="px-1 py-1 text-2xs text-muted">
                   No legal moves — game over.
                 </div>
               )}
@@ -430,10 +434,10 @@ export default function StudyPanel({ game, armed, onArm, tablebase, onPlayMove }
                     className="no-drag flex items-center gap-2 rounded-md border border-transparent px-1.5 py-1 text-left transition-colors hover:border-accent hover:bg-surface"
                   >
                     <span className="w-12 shrink-0 text-[11px] font-semibold">{move.san}</span>
-                    <span className="w-20 shrink-0 text-[10px] text-muted">{categoryLabel(invertCategory(move.category))}</span>
-                    {move.checkmate && <span className="shrink-0 text-[10px] font-semibold text-accent">#</span>}
+                    <span className="w-20 shrink-0 text-2xs text-muted">{categoryLabel(invertCategory(move.category))}</span>
+                    {move.checkmate && <span className="shrink-0 text-2xs font-semibold text-accent">#</span>}
                     <div className="flex-1" />
-                    <span className="shrink-0 font-mono text-[10px] text-muted">DTM {dtm}</span>
+                    <span className="shrink-0 font-mono text-2xs text-muted">DTM {dtm}</span>
                   </button>
                   )
                 })}

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { BOARD_UNITS, SQUARE_UNITS, squareToScreen, type SquareName } from '../../chess/squares.ts'
+import { arrowGeometry } from '../../chess/arrows.ts'
 import type { Arrow, ArrowColor } from '../../hooks/useChessGame.ts'
 
 export const arrowColors: Record<ArrowColor, string> = {
@@ -24,41 +25,39 @@ type Props = {
   size: number
 }
 
-function center(square: SquareName, flipped: boolean) {
-  const { col, row } = squareToScreen(square, flipped)
-  return { cx: col * SQUARE_UNITS + SQUARE_UNITS / 2, cy: row * SQUARE_UNITS + SQUARE_UNITS / 2 }
-}
-
-function drawArrow(ctx: CanvasRenderingContext2D, arrow: Arrow, flipped: boolean, faded: boolean) {
-  const start = center(arrow.from, flipped)
-  const end = center(arrow.to, flipped)
-  const angle = Math.atan2(end.cy - start.cy, end.cx - start.cx)
-  const shorten = SQUARE_UNITS * 0.22
-  const headLength = SQUARE_UNITS * 0.42
-
-  const x1 = start.cx + Math.cos(angle) * shorten
-  const y1 = start.cy + Math.sin(angle) * shorten
-  const x2 = end.cx - Math.cos(angle) * (shorten + headLength * 0.55)
-  const y2 = end.cy - Math.sin(angle) * (shorten + headLength * 0.55)
-
+function drawArrow(ctx: CanvasRenderingContext2D, arrow: Arrow, flipped: boolean, preview: boolean) {
   ctx.save()
-  ctx.globalAlpha = faded ? 0.55 : 0.92
   ctx.strokeStyle = arrowColors[arrow.color]
   ctx.fillStyle = arrowColors[arrow.color]
-  ctx.lineWidth = SQUARE_UNITS * 0.16
-  ctx.lineCap = 'butt'
+  ctx.globalAlpha = preview ? 0.55 : 0.92
+
+  if (arrow.from === arrow.to) {
+    // Lichess shows a ring while a square is held instead of a zero-length arrow.
+    const { col, row } = squareToScreen(arrow.from, flipped)
+    const cx = col * SQUARE_UNITS + SQUARE_UNITS / 2
+    const cy = row * SQUARE_UNITS + SQUARE_UNITS / 2
+    ctx.lineWidth = (SQUARE_UNITS * (preview ? 3 : 4)) / 64
+    ctx.beginPath()
+    ctx.arc(cx, cy, SQUARE_UNITS / 2 - ctx.lineWidth / 2, 0, Math.PI * 2)
+    ctx.stroke()
+    ctx.restore()
+    return
+  }
+
+  const { shaft, head } = arrowGeometry(arrow.from, arrow.to, flipped, preview)
+  ctx.lineWidth = shaft.width
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
 
   ctx.beginPath()
-  ctx.moveTo(x1, y1)
-  ctx.lineTo(x2, y2)
+  ctx.moveTo(shaft.from.x, shaft.from.y)
+  ctx.lineTo(shaft.to.x, shaft.to.y)
   ctx.stroke()
 
-  const tipX = end.cx - Math.cos(angle) * shorten
-  const tipY = end.cy - Math.sin(angle) * shorten
   ctx.beginPath()
-  ctx.moveTo(tipX, tipY)
-  ctx.lineTo(tipX - Math.cos(angle - 0.4) * headLength, tipY - Math.sin(angle - 0.4) * headLength)
-  ctx.lineTo(tipX - Math.cos(angle + 0.4) * headLength, tipY - Math.sin(angle + 0.4) * headLength)
+  ctx.moveTo(head[0].x, head[0].y)
+  ctx.lineTo(head[1].x, head[1].y)
+  ctx.lineTo(head[2].x, head[2].y)
   ctx.closePath()
   ctx.fill()
   ctx.restore()
@@ -93,5 +92,12 @@ export default function AnnotationCanvas({ arrows, preview, highlighted, flipped
     }
   }, [arrows, preview, highlighted, flipped, size])
 
-  return <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 h-full w-full" />
+  return (
+    <canvas
+      ref={canvasRef}
+      data-testid="annotation-canvas"
+      data-arrows={arrows.length}
+      className="pointer-events-none absolute inset-0 h-full w-full"
+    />
+  )
 }

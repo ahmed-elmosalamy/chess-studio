@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { workspaces, type WorkspaceId } from './NavRail.tsx'
 import { formatScore } from '@shared/uci'
 import type { ChessGame } from '../hooks/useChessGame.ts'
@@ -21,10 +22,18 @@ export default function StatusBar({ active, game, engine, review }: Props) {
   const evalText = primary ? `${formatScore(primary.score, game.turn === 'w' ? 'white' : 'black')} d${primary.depth}` : 'no eval'
   const reviewed = review.reviewed
   const point = review.graph.find((entry) => entry.ply === game.ply)
-  const gradeText = point?.meta ? `${point.san ?? ''} ${point.meta.label}` : 'no review yet'
+  const meta = point?.meta ?? null
+  const gradeText = meta ? `${point?.san ?? ''} ${meta.label}` : ''
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    if (!copied) return
+    const timer = window.setTimeout(() => setCopied(false), 1200)
+    return () => window.clearTimeout(timer)
+  }, [copied])
 
   return (
-    <footer className="flex h-8 shrink-0 items-center gap-2 border-t border-line bg-surface px-3 text-[11px] text-muted">
+    <footer aria-live="polite" className="flex h-8 shrink-0 items-center gap-2 border-t border-line bg-surface px-3 text-[11px] text-muted">
       <span className="font-semibold text-text">{label}</span>
       <span className="text-line">|</span>
       <span className={slot}>
@@ -38,8 +47,8 @@ export default function StatusBar({ active, game, engine, review }: Props) {
           W {review.summaries.white.accuracy} · B {review.summaries.black.accuracy}
         </span>
       )}
-      {reviewed && (
-        <span data-testid="review-grade" className={slot} style={point?.meta ? { color: point.meta.color } : undefined}>
+      {reviewed && meta && (
+        <span data-testid="review-grade" className={slot} style={{ color: meta.color }}>
           {gradeText}
         </span>
       )}
@@ -49,9 +58,17 @@ export default function StatusBar({ active, game, engine, review }: Props) {
       <span data-testid="engine-eval" className={`${slot} font-mono text-text`}>
         {evalText}
       </span>
-      <span data-testid="fen" className={`${slot} max-w-[420px] truncate font-mono`} title={game.fen}>
-        {game.fen}
-      </span>
+      <button
+        data-testid="fen"
+        type="button"
+        onClick={() => {
+          void navigator.clipboard.writeText(game.fen).then(() => setCopied(true))
+        }}
+        title={`${game.fen} — click to copy`}
+        className={`${slot} max-w-[260px] truncate font-mono transition-colors hover:border-accent hover:text-text`}
+      >
+        {copied ? 'Copied' : game.fen}
+      </button>
     </footer>
   )
 }

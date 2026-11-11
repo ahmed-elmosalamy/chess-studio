@@ -55,7 +55,7 @@ export default function EnginePanel({ engine, fen, turn, reviewRunning }: Props)
         <Cpu size={14} className="shrink-0 text-accent" />
         <div className="min-w-0 flex-1">
           <div className="truncate text-[12px] font-semibold">{status.name || 'Engine'}</div>
-          <div className="text-[10px] text-muted">
+          <div className="text-2xs text-muted">
             {status.state} · depth {primary?.depth ?? 0} · {(nps / 1000).toFixed(0)} kN/s
           </div>
         </div>
@@ -79,14 +79,14 @@ export default function EnginePanel({ engine, fen, turn, reviewRunning }: Props)
       </div>
 
       {reviewRunning && (
-        <div className="flex items-center gap-1.5 rounded-lg border border-accent bg-accent-tint px-2 py-1.5 text-[10px] leading-snug">
+        <div className="flex items-center gap-1.5 rounded-lg border border-accent bg-accent-tint px-2 py-1.5 text-2xs leading-snug">
           <Hourglass size={11} className="shrink-0 text-accent" />
           Game review is searching this game. Live analysis resumes when it finishes.
         </div>
       )}
 
       <div className="rounded-lg border border-line bg-surface p-2">
-        <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted">Engine source</div>
+        <div className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">Engine source</div>
         <div className="flex flex-col gap-1">
           {sources.map((source) => (
             <button
@@ -99,17 +99,17 @@ export default function EnginePanel({ engine, fen, turn, reviewRunning }: Props)
               }`}
             >
               <div className="text-[11px] font-semibold">{source.label}</div>
-              <div className="text-[10px] text-muted">{source.hint}</div>
+              <div className="text-2xs text-muted">{source.hint}</div>
             </button>
           ))}
         </div>
 
         {engine.source === 'native' && (
           <div className="mt-2 flex flex-col gap-1 rounded-md border border-line bg-surface-2 p-2">
-            <div className="truncate font-mono text-[10px] text-muted" title={native.path ?? undefined}>
+            <div className="truncate font-mono text-2xs text-muted" title={native.path ?? undefined}>
               {native.path ?? 'No executable selected'}
             </div>
-            {native.path && !native.exists && <div className="text-[10px] text-danger">File not found — pick the engine again.</div>}
+            {native.path && !native.exists && <div className="text-2xs text-danger">File not found — pick the engine again.</div>}
             <button
               data-testid="engine-browse"
               type="button"
@@ -118,22 +118,22 @@ export default function EnginePanel({ engine, fen, turn, reviewRunning }: Props)
             >
               <FolderOpen size={11} /> Browse for stockfish.exe
             </button>
-            {native.error && <div className="text-[10px] text-danger">{native.error}</div>}
+            {native.error && <div className="text-2xs text-danger">{native.error}</div>}
           </div>
         )}
       </div>
 
       <div className="flex flex-col gap-1.5 rounded-lg border border-line bg-surface p-2">
-        <div className="text-[10px] font-semibold uppercase tracking-wide text-muted">Settings</div>
+        <div className="text-2xs font-semibold uppercase tracking-wide text-muted">Settings</div>
         <Field label="Multi-PV lines" value={settings.multipv} options={[1, 2, 3, 4, 5]} onChange={(multipv) => engine.setSettings({ multipv })} />
         <Field label="Threads" value={settings.threads} options={[1, 2, 4, 8]} onChange={(threads) => engine.setSettings({ threads })} />
         <Field label="Hash (MB)" value={settings.hash} options={[64, 128, 256, 512, 1024]} onChange={(hash) => engine.setSettings({ hash })} />
         <Field label="Depth" value={settings.depth} options={[12, 15, 18, 22, 26]} onChange={(depth) => engine.setSettings({ depth })} />
-        {engine.source === 'wasm' && <div className="pt-0.5 text-[10px] leading-snug text-muted">Threads and hash size apply to the native engine; the bundled WASM build runs single-threaded.</div>}
+        {engine.source === 'wasm' && <div className="pt-0.5 text-2xs leading-snug text-muted">Threads and hash size apply to the native engine; the bundled WASM build runs single-threaded.</div>}
       </div>
 
       <div className="flex shrink-0 flex-col gap-1 rounded-lg border border-line bg-surface p-2">
-        <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wide text-muted">
+        <div className="flex items-center justify-between text-2xs font-semibold uppercase tracking-wide text-muted">
           <span className="flex items-center gap-1">
             <Search size={11} /> Principal variations
           </span>
@@ -163,12 +163,12 @@ export default function EnginePanel({ engine, fen, turn, reviewRunning }: Props)
                 <span className="text-muted">d{line.depth}</span>
                 <span className="ml-auto text-muted">{(line.nodes / 1000).toFixed(0)}k</span>
               </div>
-              <div className="truncate font-mono text-[10px] text-muted">{line.pv.slice(0, 8).join(' ') || '—'}</div>
+              <div className="truncate font-mono text-2xs text-muted">{line.pv.slice(0, 8).join(' ') || '—'}</div>
             </button>
           ))}
 
           {lines.length > 3 && (
-            <button type="button" onClick={() => setShowAll((previous) => !previous)} className="no-drag text-[10px] text-muted hover:text-text">
+            <button type="button" onClick={() => setShowAll((previous) => !previous)} className="no-drag text-2xs text-muted hover:text-text">
               {showAll ? 'Show top three' : `Show all ${lines.length}`}
             </button>
           )}
@@ -176,7 +176,7 @@ export default function EnginePanel({ engine, fen, turn, reviewRunning }: Props)
 
         {steps.length > 0 && (
           <div className="shrink-0 rounded-md border border-line bg-surface-2 px-2 py-1.5">
-            <div className="mb-1 text-[10px] uppercase tracking-wide text-muted">Line on board</div>
+            <div className="mb-1 text-2xs uppercase tracking-wide text-muted">Line on board</div>
             <div className="flex flex-wrap gap-x-1.5 gap-y-0.5 font-mono text-[11px]">
               {steps.map((step, index) => (
                 <span key={`${step.san}-${index}`} className={index === 0 ? 'text-text' : 'text-muted'}>

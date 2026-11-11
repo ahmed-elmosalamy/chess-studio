@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { PlacementPiece } from '@shared/fen'
+import { gradeMeta, type ReviewGrade } from '@shared/review'
 import PieceGlyph, { PieceSymbol } from '../../chess/pieces.tsx'
 import { BOARD_UNITS, FILES, SQUARE_UNITS, screenToSquare, squareToScreen, isLightSquare, allSquares, type SquareName } from '../../chess/squares.ts'
 import AnnotationCanvas, { arrowColorFor } from './AnnotationCanvas.tsx'
@@ -13,13 +14,26 @@ type DragState = { from: SquareName; startX: number; startY: number; x: number; 
 
 export type Placement = { piece: PlacementPiece | null; onPlace: (square: SquareName) => void }
 
-export default function ChessBoard({ game, pvArrows, placement }: { game: ChessGame; pvArrows?: Arrow[]; placement?: Placement }) {
+export default function ChessBoard({
+  game,
+  pvArrows,
+  placement,
+  grade,
+  showCoordinates = true
+}: {
+  game: ChessGame
+  pvArrows?: Arrow[]
+  placement?: Placement
+  grade?: ReviewGrade | null
+  showCoordinates?: boolean
+}) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState(520)
   const [drag, setDrag] = useState<DragState | null>(null)
   const [arrowPreview, setArrowPreview] = useState<Arrow | null>(null)
 
   const { flipped, selected, turn, arrows, highlighted, legalTargets, lastMove, checkSquare, pendingPromotion } = game
+  const moveGrade = grade ? gradeMeta[grade] : null
 
   useEffect(() => {
     const element = containerRef.current
@@ -120,6 +134,9 @@ export default function ChessBoard({ game, pvArrows, placement }: { game: ChessG
     <div
       ref={containerRef}
       data-testid="board"
+      data-fen={game.fen}
+      role="img"
+      aria-label={`Chess board, ${turn === 'w' ? 'White' : 'Black'} to move${lastMove ? `, last move ${lastMove.from} to ${lastMove.to}` : ''}`}
       className={`relative h-full w-full touch-none select-none overflow-hidden rounded-lg border border-line ${placement ? 'cursor-copy' : ''}`}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
@@ -149,7 +166,16 @@ export default function ChessBoard({ game, pvArrows, placement }: { game: ChessG
           [lastMove.from, lastMove.to].map((square) => {
             const { col, row } = squareToScreen(square, flipped)
             return (
-              <rect key={`last-${square}`} x={col * SQUARE_UNITS} y={row * SQUARE_UNITS} width={SQUARE_UNITS} height={SQUARE_UNITS} fill="var(--highlight-last)" />
+              <rect
+                key={`last-${square}`}
+                data-testid={moveGrade ? 'board-grade-fill' : undefined}
+                x={col * SQUARE_UNITS}
+                y={row * SQUARE_UNITS}
+                width={SQUARE_UNITS}
+                height={SQUARE_UNITS}
+                fill={moveGrade ? moveGrade.color : 'var(--highlight-last)'}
+                fillOpacity={moveGrade ? 0.28 : 1}
+              />
             )
           })}
 
@@ -193,38 +219,66 @@ export default function ChessBoard({ game, pvArrows, placement }: { game: ChessG
           </g>
         )}
 
-        {FILES.map((file, col) => {
-          const square = screenToSquare(col, 7, flipped) as string
-          const onLight = isLightSquare(square)
-          return (
-            <text
-              key={`file-${file}`}
-              x={col * SQUARE_UNITS + 9}
-              y={BOARD_UNITS - 10}
-              className={`board-label ${onLight ? 'board-label-on-light' : 'board-label-on-dark'}`}
-            >
-              {file}
-            </text>
-          )
-        })}
+        {showCoordinates && (
+          <>
+            {FILES.map((file, col) => {
+              const square = screenToSquare(col, 7, flipped) as string
+              const onLight = isLightSquare(square)
+              return (
+                <text
+                  key={`file-${file}`}
+                  x={col * SQUARE_UNITS + 9}
+                  y={BOARD_UNITS - 10}
+                  className={`board-label ${onLight ? 'board-label-on-light' : 'board-label-on-dark'}`}
+                >
+                  {file}
+                </text>
+              )
+            })}
 
-        {[0, 1, 2, 3, 4, 5, 6, 7].map((row) => {
-          const square = screenToSquare(0, row, flipped) as string
-          const onLight = isLightSquare(square)
-          return (
-            <text
-              key={`rank-${row}`}
-              x={9}
-              y={row * SQUARE_UNITS + SQUARE_UNITS - 10}
-              className={`board-label ${onLight ? 'board-label-on-light' : 'board-label-on-dark'}`}
-            >
-              {square[1]}
-            </text>
-          )
-        })}
+            {[0, 1, 2, 3, 4, 5, 6, 7].map((row) => {
+              const square = screenToSquare(0, row, flipped) as string
+              const onLight = isLightSquare(square)
+              return (
+                <text
+                  key={`rank-${row}`}
+                  x={9}
+                  y={row * SQUARE_UNITS + SQUARE_UNITS - 10}
+                  className={`board-label ${onLight ? 'board-label-on-light' : 'board-label-on-dark'}`}
+                >
+                  {square[1]}
+                </text>
+              )
+            })}
+          </>
+        )}
       </svg>
 
       <AnnotationCanvas arrows={pvArrows ? [...arrows, ...pvArrows] : arrows} preview={arrowPreview} highlighted={highlighted} flipped={flipped} size={size} />
+
+      {moveGrade && lastMove &&
+        (() => {
+          const { col, row } = squareToScreen(lastMove.to, flipped)
+          const radius = SQUARE_UNITS * 0.16
+          const font = radius * (moveGrade.glyph.length > 1 ? 1 : 1.15)
+          return (
+            <svg
+              viewBox={`0 0 ${BOARD_UNITS} ${BOARD_UNITS}`}
+              className="pointer-events-none absolute inset-0 z-10 h-full w-full"
+              aria-hidden
+            >
+              <g data-testid="board-grade-badge" role="img" aria-label={moveGrade.label}>
+                <g transform={`translate(${(col + 1) * SQUARE_UNITS - radius - 3} ${row * SQUARE_UNITS + radius + 3})`}>
+                  <circle r={radius + 1.5} fill="var(--surface)" />
+                  <rect x={-radius} y={-radius} width={radius * 2} height={radius * 2} rx={radius * 0.28} fill={moveGrade.color} />
+                  <text y={0.5} textAnchor="middle" dominantBaseline="central" fontSize={font} fontWeight="700" fill="#ffffff">
+                    {moveGrade.glyph}
+                  </text>
+                </g>
+              </g>
+            </svg>
+          )
+        })()}
 
       {pendingPromotion &&
         (() => {

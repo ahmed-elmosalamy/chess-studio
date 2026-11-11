@@ -40,8 +40,8 @@ export default function useLibrary() {
       setWarnings([])
       setNotice(null)
       try {
-        const entry = await window.studio.library.save(pgn)
-        setNotice(`Saved ${entry.white} vs ${entry.black}`)
+        const { entry, duplicate } = await window.studio.library.save(pgn)
+        setNotice(duplicate ? `Already in library: ${entry.white} vs ${entry.black}` : `Saved ${entry.white} vs ${entry.black}`)
         await refresh()
       } catch (caught) {
         setError(cleanError(caught))
@@ -61,8 +61,10 @@ export default function useLibrary() {
       const report = await window.studio.library.importFiles()
       if (report.cancelled) return
       const saved = report.files.reduce((total, file) => total + file.saved, 0)
+      const duplicates = report.files.reduce((total, file) => total + file.duplicates, 0)
       const skipped = report.files.flatMap((file) => file.skipped.map((game) => `${file.name}, game ${game.index + 1}: ${game.reason}`))
-      setNotice(`${saved} game${saved === 1 ? '' : 's'} imported from ${report.files.length} file${report.files.length === 1 ? '' : 's'}`)
+      const summary = [`${saved} game${saved === 1 ? '' : 's'} imported`, duplicates ? `${duplicates} already in library` : ''].filter(Boolean).join(' · ')
+      setNotice(`${summary} from ${report.files.length} file${report.files.length === 1 ? '' : 's'}`)
       setWarnings(skipped)
       await refresh()
     } catch (caught) {
@@ -138,16 +140,18 @@ export default function useLibrary() {
       setNotice(null)
       try {
         let saved = 0
+        let duplicates = 0
         const skipped: string[] = []
         for (const [index, pgn] of pgns.entries()) {
           try {
-            await window.studio.library.save(pgn)
-            saved += 1
+            const result = await window.studio.library.save(pgn)
+            if (result.duplicate) duplicates += 1
+            else saved += 1
           } catch (caught) {
             skipped.push(`game ${index + 1}: ${cleanError(caught)}`)
           }
         }
-        setNotice(`${saved} game${saved === 1 ? '' : 's'} saved to the library`)
+        setNotice([`${saved} game${saved === 1 ? '' : 's'} saved to the library`, duplicates ? `${duplicates} already in library` : ''].filter(Boolean).join(' · '))
         setWarnings(skipped)
         setFetchReport(null)
         await refresh()
@@ -173,6 +177,7 @@ export default function useLibrary() {
 
   return {
     entries: visible,
+    all: entries,
     total: entries.length,
     loading,
     busy,

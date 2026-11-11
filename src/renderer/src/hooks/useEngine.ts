@@ -106,6 +106,7 @@ export default function useEngine(fen: string, turn: Color) {
   }, [])
 
   const toggle = useCallback(() => setEnabled((previous) => !previous), [])
+  const enable = useCallback(() => setEnabled(true), [])
   const disable = useCallback(() => setEnabled(false), [])
 
   const lines = useMemo(() => Object.values(lineMap).sort((a, b) => a.multipv - b.multipv), [lineMap])
@@ -115,5 +116,5 @@ export default function useEngine(fen: string, turn: Color) {
   const primary = lines.find((line) => line.multipv === (selected ?? 1)) ?? lines[0] ?? null
   const whiteChance = primary ? (turn === 'w' ? winChance(primary.score) : 100 - winChance(primary.score)) : 50
 
-  return { enabled, toggle, disable, source, setSource, settings, setSettings, native, pickPath, status, lines, best, selected, setSelected, activeMultipv, arrowLine, primary, whiteChance }
+  return { enabled, toggle, enable, disable, source, setSource, settings, setSettings, native, pickPath, status, lines, best, selected, setSelected, activeMultipv, arrowLine, primary, whiteChance }
 }

@@ -57,7 +57,8 @@ export function uciMove(node: TreeNode): string {
   return `${node.from}${node.to}${node.promotion ?? ''}`
 }
 
-function materialAfter(fen: string, moves: string[], color: 'w' | 'b'): number | null {
+/** Material balance from the mover's side after the given moves, so an even trade nets out. */
+function materialBalance(fen: string, moves: string[], color: 'w' | 'b'): number | null {
   const chess = new Chess(fen)
   for (const move of moves) {
     try {
@@ -67,18 +68,19 @@ function materialAfter(fen: string, moves: string[], color: 'w' | 'b'): number |
     }
   }
 
-  let total = 0
+  let balance = 0
   for (const row of chess.board()) {
     for (const cell of row) {
-      if (cell && cell.color === color) total += pieceValues[cell.type]
+      if (!cell) continue
+      balance += cell.color === color ? pieceValues[cell.type] : -pieceValues[cell.type]
     }
   }
-  return total
+  return balance
 }
 
 /**
- * A sacrifice shows up as giving up material that the engine's reference line keeps, while the
- * evaluation stays at least as good, so both lines are played out to the same depth before counting.
+ * A sacrifice gives up material that the engine's reference line keeps, so both lines are played
+ * out to the same depth and compared by material balance instead of raw own-material totals.
  */
 export function isSacrifice(
   parentFen: string,
@@ -90,11 +92,12 @@ export function isSacrifice(
 ): boolean {
   if (!reply || !bestReply) return false
 
-  const playedMaterial = materialAfter(parentFen, [played, reply], mover)
-  const bestMaterial = materialAfter(parentFen, [best, bestReply], mover)
+  const playedMaterial = materialBalance(parentFen, [played, reply], mover)
+  const bestMaterial = materialBalance(parentFen, [best, bestReply], mover)
   if (playedMaterial === null || bestMaterial === null) return false
 
-  return playedMaterial <= bestMaterial - 1
+  // chess.com only marks piece and exchange sacrifices, so a one-pawn give-back is not enough.
+  return playedMaterial <= bestMaterial - 2
 }
 
 export type EvaluationParts = MoveEvaluation & { beforeLabel: string; afterLabel: string; whiteAfter: number }

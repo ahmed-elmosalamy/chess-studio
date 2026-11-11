@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { pieceCount, TABLEBASE_MAX_PIECES, type TablebaseResult } from '@shared/tablebase'
 import type { ChessGame } from './useChessGame.ts'
 
@@ -11,12 +11,14 @@ export default function useTablebase(game: ChessGame, enabled: boolean) {
   const [result, setResult] = useState<TablebaseResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const requestRef = useRef(0)
 
   const fen = game.fen
   const count = useMemo(() => pieceCount(fen), [fen])
   const eligible = count <= TABLEBASE_MAX_PIECES
 
   const refresh = useCallback(async () => {
+    const request = ++requestRef.current
     if (!enabled || !eligible) {
       setResult(null)
       setError(null)
@@ -25,12 +27,15 @@ export default function useTablebase(game: ChessGame, enabled: boolean) {
     setLoading(true)
     setError(null)
     try {
-      setResult(await window.studio.tablebase.query({ fen }))
+      const next = await window.studio.tablebase.query({ fen })
+      if (request !== requestRef.current) return
+      setResult(next)
     } catch (caught) {
+      if (request !== requestRef.current) return
       setError(cleanError(caught))
       setResult(null)
     } finally {
-      setLoading(false)
+      if (request === requestRef.current) setLoading(false)
     }
   }, [enabled, eligible, fen])
 

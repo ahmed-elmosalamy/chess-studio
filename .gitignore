@@ -2,7 +2,9 @@ node_modules/
 out/
 dist/
 dist-new/
+dist-icon/
 release/
 .shots/
 *.log
 .DS_Store
+src/renderer/public/ocr/

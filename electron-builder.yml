@@ -14,6 +14,8 @@ extraFiles:
     to: LICENSE
   - from: NOTICE.md
     to: NOTICE.md
+  - from: licenses
+    to: licenses
 asar: true
 win:
   icon: build/icon.png
